@@ -1,3 +1,6 @@
+from player import Player
+from bot import Bot
+
 class TicTacToe:
     def __init__(self):
         self.size = 3
@@ -28,19 +31,24 @@ class TicTacToe:
         return all(self.board[r][c] != " " for r in range(self.size) for c in range(self.size))
 
     def play(self, players):
-        self.players = players
+        if players is None:
+            self.players = [Player("Người chơi", "O"), Bot("Máy", "X")]
+        else:
+            self.players = players
         turn = 0
         while True:
             self.print_board()
             current_player = self.players[turn % 2]
             print(f"{current_player.name} ({current_player.symbol}) chơi")
 
-            row, col = map(int, input("Nhập hàng và cột (0-2): ").split())
+            row, col = current_player.move(self.board)
+
             if self.board[row][col] != " ":
                 print("Ô đã được đánh, chọn lại!")
                 continue
 
             self.board[row][col] = current_player.symbol
+
             if self.check_win(row, col, current_player.symbol):
                 self.print_board()
                 print(f"{current_player.name} thắng!")
@@ -49,4 +57,5 @@ class TicTacToe:
                 self.print_board()
                 print("Hòa!")
                 break
+
             turn += 1
