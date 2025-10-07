@@ -3,8 +3,8 @@ class Player:
         self.name = name
         self.symbol = symbol
 
-    #Nước đi của người chơi
-    def move(self, board):
+    # Nước đi của người chơi
+    def move(self, board, game=None):
         while True:
             try:
                 row, col = map(int, input("Nhập hàng và cột (0-2): ").split())

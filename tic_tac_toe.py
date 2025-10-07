@@ -1,3 +1,4 @@
+import random
 from player import Player
 from bot import Bot
 
@@ -32,16 +33,32 @@ class TicTacToe:
 
     def play(self, players):
         if players is None:
-            self.players = [Player("Người chơi", "O"), Bot("Máy", "X")]
+            player = Player("Người chơi", "X")
+            bot = Bot("Máy", "O")
+
+            # Ngẫu nhiên chọn ai đi trước
+            self.players = [player, bot]
+            random.shuffle(self.players)
+
+            # Đảm bảo người đi trước luôn là X, người sau là O
+            self.players[0].symbol = "X"
+            self.players[1].symbol = "O"
+
+            print(f"{self.players[0].name} đi trước với ký hiệu {self.players[0].symbol}")
         else:
             self.players = players
+
         turn = 0
         while True:
             self.print_board()
             current_player = self.players[turn % 2]
             print(f"{current_player.name} ({current_player.symbol}) chơi")
 
-            row, col = current_player.move(self.board)
+            # 👇 Nếu là Bot thì truyền cả game vào
+            if isinstance(current_player, Bot):
+                row, col = current_player.move(self.board, self)
+            else:
+                row, col = current_player.move(self.board)
 
             if self.board[row][col] != " ":
                 print("Ô đã được đánh, chọn lại!")
@@ -59,3 +76,19 @@ class TicTacToe:
                 break
 
             turn += 1
+
+    def check_win_board(self, board, symbol):
+        """chỉ dùng cho bot trong minimax"""
+        # Gán tạm self.board = board để có thể tái sử dụng check_win()
+        original_board = self.board
+        self.board = board  # Tạm thời thay bàn cờ
+
+        for r in range(len(board)):
+            for c in range(len(board)):
+                if board[r][c] == symbol:
+                    if self.check_win(r, c, symbol):
+                        self.board = original_board  # khôi phục lại
+                        return True
+
+        self.board = original_board  # khôi phục lại
+        return False
