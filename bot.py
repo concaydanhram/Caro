@@ -72,6 +72,7 @@ class Bot:
         opp_score = self.count_sequences(board, "O" if self.symbol == "X" else "X")
         return my_score - opp_score
 
+    """Cho biết máy hay người đang có uư thế hơn (Dùng khi giới hạn độ sâu mà vẫn chưa tìm được kết quả thắng thua)"""
     def count_sequences(self, board, symbol):
         n = len(board)
         score = 0
