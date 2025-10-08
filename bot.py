@@ -7,8 +7,8 @@ class Bot:
         self.max_depth = max_depth  # Giới hạn độ sâu để đỡ nặng
 
     def move(self, board, game):
-        bestScore = float('-inf')
-        bestMove = None
+        best_score = float('-inf')
+        best_move = None
         empty_cells = self.empty_cells(board)
 
         for r, c in empty_cells:
@@ -16,14 +16,14 @@ class Bot:
             score = self.minimax(board, 0, False, float('-inf'), float('inf'), game)
             board[r][c] = " "  # hoàn tác
 
-            if score > bestScore:
-                bestScore = score
-                bestMove = (r, c)
+            if score > best_score:
+                best_score = score
+                best_move = (r, c)
 
-        return bestMove
+        return best_move
 
     # minimax có cắt tỉa alpha-beta
-    def minimax(self, board, depth, isMaximizing, alpha, beta, game):
+    def minimax(self, board, depth, is_maximizing, alpha, beta, game):
         opponent = "O" if self.symbol == "X" else "X"
 
         # Kiểm tra thắng thua
@@ -39,34 +39,34 @@ class Bot:
             return self.evaluate(board, game)
 
         # Lượt bot
-        if isMaximizing:
-            bestScore = float('-inf')
+        if is_maximizing:
+            best_score = float('-inf')
             for r, c in self.empty_cells(board):
                 board[r][c] = self.symbol
                 score = self.minimax(board, depth + 1, False, alpha, beta, game)
                 board[r][c] = " "
-                bestScore = max(bestScore, score)
+                best_score = max(best_score, score)
                 alpha = max(alpha, score)
                 if beta <= alpha:
                     break  # Cắt tỉa
-            return bestScore
+            return best_score
 
         # Lượt đối thủ
         else:
-            bestScore = float('inf')
+            best_score = float('inf')
             for r, c in self.empty_cells(board):
                 board[r][c] = opponent
                 score = self.minimax(board, depth + 1, True, alpha, beta, game)
                 board[r][c] = " "
-                bestScore = min(bestScore, score)
+                best_score = min(best_score, score)
                 beta = min(beta, score)
                 if beta <= alpha:
                     break  # Cắt tỉa
-            return bestScore
+            return best_score
 
     # Hàm đánh giá tạm thời khi chưa đến kết thúc
     def evaluate(self, board, game):
-        # Rất đơn giản: đếm số ô gần thắng (3 liên tiếp, 4 liên tiếp,...)
+        # Đếm số ô gần thắng (3 liên tiếp, 4 liên tiếp,...)
         # có thể tùy chỉnh mạnh hơn nếu bạn muốn
         my_score = self.count_sequences(board, self.symbol)
         opp_score = self.count_sequences(board, "O" if self.symbol == "X" else "X")
