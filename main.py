@@ -24,7 +24,7 @@ def main():
     choice = input("Nhập lựa chọn (1/2): ")
 
     if choice == "1":
-        # random chọn ai đi trước
+            # random chọn ai đi trước
         if random.choice([True, False]):
             p1 = Player("Người chơi", "X")
             p2 = Bot("Máy", "O")
@@ -48,6 +48,7 @@ def main():
     else:
         print("Lựa chọn không hợp lệ!")
         return
+
 
 if __name__ == "__main__":
     main()
