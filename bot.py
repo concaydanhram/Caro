@@ -1,5 +1,3 @@
-
-
 class Bot:
     def __init__(self, name="Máy", symbol="X", max_depth=3):
         self.name = name

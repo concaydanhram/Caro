@@ -96,7 +96,6 @@ class GameUI:
         else:
             msg = "Start!"
 
-        # Hiển thị thông tin người chơi (quân X/O)
         info_text = f"You: {player_info.get('Player', '?')}, Bot: {player_info.get('Bot', '?')}"
         info_surface = self.STATUS_FONT.render(info_text, True, self.LINE_COLOR)
         self.screen.blit(info_surface, (10, 610))
