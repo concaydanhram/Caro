@@ -1,0 +1,100 @@
+[
+    {
+        "date": "2025-12-22 15:35:15",
+        "board_size": 3,
+        "difficulty": "Medium",
+        "duration": 1.63,
+        "score": 2499
+    },
+    {
+        "date": "2025-12-22 15:38:26",
+        "board_size": 3,
+        "difficulty": "Medium",
+        "duration": 2.22,
+        "score": 2498
+    },
+    {
+        "date": "2025-12-22 15:37:54",
+        "board_size": 3,
+        "difficulty": "Medium",
+        "duration": 3.19,
+        "score": 2497
+    },
+    {
+        "date": "2025-12-22 15:37:47",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.72,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 15:48:50",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.95,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 16:00:27",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.66,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 16:00:29",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.14,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 18:12:53",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.01,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 18:12:59",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.17,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 18:13:01",
+        "board_size": 3,
+        "difficulty": "Easy",
+        "duration": 1.18,
+        "score": 1499
+    },
+    {
+        "date": "2025-12-22 15:50:55",
+        "board_size": 8,
+        "difficulty": "Easy",
+        "duration": 2.95,
+        "score": 1498
+    },
+    {
+        "date": "2025-12-22 15:49:16",
+        "board_size": 8,
+        "difficulty": "Easy",
+        "duration": 3.52,
+        "score": 1497
+    },
+    {
+        "date": "2025-12-22 15:54:38",
+        "board_size": 8,
+        "difficulty": "Easy",
+        "duration": 3.13,
+        "score": 1497
+    },
+    {
+        "date": "2025-12-22 15:40:50",
+        "board_size": 8,
+        "difficulty": "Easy",
+        "duration": 4.01,
+        "score": 1496
+    }
+]
