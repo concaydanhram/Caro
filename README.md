@@ -99,3 +99,5 @@ Giao diện được thiết kế theo phong cách phẳng (Flat Design) với t
 ## 🤝 Đóng góp
 
 Mọi ý kiến đóng góp hoặc báo lỗi vui lòng liên hệ trực tiếp với nhóm phát triển thông qua GitHub Issues hoặc email của trưởng nhóm.
+github: concaydanhram
+email: blehoang615@gmail.com
