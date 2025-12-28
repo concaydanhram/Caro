@@ -4,9 +4,9 @@ import time
 class Bot:
     def __init__(self, name="Máy", symbol="X", max_depth=3, use_pruning=True):
         self.name = name
-        self.symbol = symbol
-        self.max_depth = max_depth
-        self.use_pruning = use_pruning  # [NEW] Cờ bật/tắt cắt tỉa
+        self.symbol = symbol    
+        self.max_depth = max_depth         # Độ sâu tối đa cây tìm kiếm Minimax
+        self.use_pruning = use_pruning     # Bật/tắt cắt tỉa Alpha-Beta
         
         # Thống kê hiệu năng
         self.nodes_visited = 0
@@ -18,18 +18,29 @@ class Bot:
         
         possible_moves = self.get_promising_moves(board)
         
+        # Nếu bàn cờ trống (lượt đầu tiên), đánh vào chính giữa
         if not possible_moves:
             center = len(board) // 2
             self.last_think_time = round(time.time() - start_time, 4)
             return center, center
         
+        # Nếu chỉ có 1 nước đi, chọn luôn nước đó 
         if len(possible_moves) == 1:
-            self.last_think_time = round(time.time() - start_time, 4)
             return list(possible_moves)[0]
-
+        
+        # Nếu có nước đi nào giúp thắng ngay lập tức, đánh luôn không cần nghĩ
+        for r, c in possible_moves:
+            board[r][c] = self.symbol
+            if game.check_win_board(board, self.symbol):
+                board[r][c] = " " # Trả lại trạng thái cũ trước khi return
+                return r, c
+            board[r][c] = " " # Trả lại trạng thái cũ
+        
+        # --- Bắt đầu Minimax để chọn nước đi tốt nhất ---
         best_score = float('-inf')
         best_move = None
-        
+
+        # Duyệt qua các nước đi khả dĩ
         for r, c in possible_moves:
             board[r][c] = self.symbol
             # Gọi minimax
@@ -45,20 +56,27 @@ class Bot:
         return best_move
 
     def minimax(self, board, depth, is_maximizing, alpha, beta, game):
-        self.nodes_visited += 1 # Đếm số node đã duyệt
+        # Đếm số node đã duyệt
+        self.nodes_visited += 1 
 
         opponent = "O" if self.symbol == "X" else "X"
+        WIN_SCORE = 1000000000
 
         if game.check_win_board(board, self.symbol):
-            return 10000 - depth
+            return WIN_SCORE - depth
         elif game.check_win_board(board, opponent):
-            return -10000 + depth
+            return -WIN_SCORE + depth
         
         if depth >= self.max_depth or self.is_full(board):
+            # Trả về điểm ngẫu nhiên nếu ở độ sâu 0 (chế độ dễ nhất)
+            if depth == 0:
+                return random.randint(-10, 10)  
             return self.evaluate(board, game)
 
+        # Lấy các nước đi khả dĩ
         possible_moves = self.get_promising_moves(board)
         
+        # Đệ quy Minimax
         if is_maximizing:
             best_score = float('-inf')
             for r, c in possible_moves:
@@ -67,7 +85,7 @@ class Bot:
                 board[r][c] = " "
                 best_score = max(best_score, score)
                 
-                # [UPDATE] Chỉ cập nhật Alpha và cắt tỉa nếu chế độ Pruning được BẬT
+                # Chỉ cập nhật Alpha và cắt tỉa nếu chế độ Pruning được BẬT
                 if self.use_pruning:
                     alpha = max(alpha, score)
                     if beta <= alpha:
@@ -81,13 +99,14 @@ class Bot:
                 board[r][c] = " "
                 best_score = min(best_score, score)
                 
-                # [UPDATE] Chỉ cập nhật Beta và cắt tỉa nếu chế độ Pruning được BẬT
+                # Chỉ cập nhật Beta và cắt tỉa nếu chế độ Pruning được BẬT
                 if self.use_pruning:
                     beta = min(beta, score)
                     if beta <= alpha:
                         break
             return best_score
 
+    # Lấy các nước đi khả dĩ xung quanh các quân đã đánh
     def get_promising_moves(self, board):
         possible_moves = set()
         size = len(board)
@@ -97,11 +116,13 @@ class Bot:
             (1, -1),  (1, 0),  (1, 1)
         ]
         
+        # Tìm các ô trống xung quanh ô đã đánh (phạm vi 1 ô)
         found_any_piece = False
         for r in range(size):
             for c in range(size):
                 if board[r][c] != " ":
                     found_any_piece = True
+
                     for dr, dc in directions:
                         nr, nc = r + dr, c + dc
                         if 0 <= nr < size and 0 <= nc < size and board[nr][nc] == " ":
@@ -112,42 +133,135 @@ class Bot:
             
         return list(possible_moves)
 
+    # Chấm điểm ước tính cho nước đi
     def evaluate(self, board, game):
         my_score = self.count_sequences(board, self.symbol)
         opp_score = self.count_sequences(board, "O" if self.symbol == "X" else "X")
+        # Nhân 1.2 vào đối thủ để ép Bot ưu tiên chặn hơn là tấn công.
         return my_score - (opp_score * 1.2)
 
+    # Hàm ước tính số điểm dựa trên các chuỗi quân cờ
     def count_sequences(self, board, symbol):
         n = len(board)
-        score = 0
-        directions = [(0,1), (1,0), (1,1), (1,-1)]
+        total_score = 0
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
 
         for r in range(n):
             for c in range(n):
-                if board[r][c] == symbol:
-                    for dr, dc in directions:
-                        count = 0
-                        blocked = 0
-                        for k in range(1, 5): 
-                            nr, nc = r + dr*k, c + dc*k
-                            if 0 <= nr < n and 0 <= nc < n:
-                                if board[nr][nc] == symbol:
-                                    count += 1
-                                elif board[nr][nc] != " ":
-                                    blocked += 1
-                                    break
-                            else:
-                                blocked += 1
-                                break
-                        
-                        if count == 4: score += 100000
-                        elif count == 3:
-                            if blocked == 0: score += 1000
-                            else: score += 100
-                        elif count == 2:
-                            if blocked == 0: score += 10
-                            
-        return score
+                if board[r][c] != symbol:
+                    continue
 
+                # Đếm fork tại điểm này
+                live_three = 0      # Chuỗi 3 quân không bị chặn 2 đầu (--- OOO ---)
+                dead_four = 0       # Chuỗi 4 quân bị chặn 1 đầu (X OOOO --- )
+                live_four = 0       # Chuỗi 4 quân không bị chặn 2 đầu (--- OOOO --- )
+
+                for dr, dc in directions:
+                    # --- 1. TRÁNH ĐẾM TRÙNG ---
+                    prev_r, prev_c = r - dr, c - dc
+                    if 0 <= prev_r < n and 0 <= prev_c < n and board[prev_r][prev_c] == symbol:
+                        continue
+
+                    count = 0
+                    gaps = 0
+                    blocked_end = 0
+
+                    # Kiểm tra đầu phía sau có bị chặn không
+                    if not (0 <= prev_r < n and 0 <= prev_c < n) or board[prev_r][prev_c] != " ":
+                        blocked_end += 1
+
+                    # --- 2. QUÉT ---
+                    current_r, current_c = r, c
+                    while 0 <= current_r < n and 0 <= current_c < n:
+                        cell = board[current_r][current_c]
+
+                        if cell == symbol:
+                            count += 1
+                            current_r += dr
+                            current_c += dc
+
+                        elif cell == " ":
+                            if gaps == 0:
+                                gaps = 1
+                                current_r += dr
+                                current_c += dc
+                            else:
+                                break
+                        else:
+                            blocked_end += 1
+                            break
+
+                    # --- 3. CHẤM ĐIỂM CÁC CHUỖI ---
+                    # 5 quân: Chính thức chiến thắng
+                    if count >= 5:
+                        total_score += 100_000_000
+                        continue
+                    
+                    # Bị chặn 2 đầu: không có giá trị
+                    if blocked_end == 2:
+                        continue
+
+                    # 4 quân: Cực kỳ nguy hiểm
+                    if count == 4:
+                        # Live-four: không bị chặn 2 đầu
+                        if blocked_end == 0:
+                            total_score += 1_000_000
+                            live_four += 1
+                        # Dead-four: bị chặn 1 đầu
+                        else:
+                            total_score += 200_000
+                            dead_four += 1
+                        continue
+
+                    # 3 quân: Nguy hiểm
+                    if count == 3:
+                        # Live-three: không bị chặn 2 đầu
+                        if blocked_end == 0:
+                            # Live-three gãy (có 1 ô trống ở giữa)
+                            if gaps == 1:
+                                total_score += 12_000
+                            # Live-three không gãy
+                            else:
+                                total_score += 8_000
+                            live_three += 1
+                        # Dead-three: bị chặn 1 đầu
+                        else:
+                            total_score += 500
+                        continue
+
+                    # 2 quân: Khởi đầu, nguy hiểm chưa cao
+                    if count == 2:
+                        # Live-two: không bị chặn 2 đầu
+                        if blocked_end == 0:
+                            total_score += 80
+                        # Dead-two: bị chặn 1 đầu
+                        else:
+                            total_score += 10
+                        continue
+
+                    # 1 quân: Rất ít giá trị
+                    if count == 1 and blocked_end == 0:
+                        total_score += 5
+
+                # --- 4. XỬ LÝ CÁC THẾ FORK (TẤN CÔNG KÉP) ---
+                # 2 live-three: thắng trong 2 nước 
+                if live_three >= 2:
+                    total_score += 30_000
+
+                # live-three + dead-four: gần như chắc thắng
+                elif live_three >= 1 and dead_four >= 1:
+                    total_score += 50_000
+
+                # 2 dead-four: bắt buộc thua
+                elif dead_four >= 2:
+                    total_score += 80_000
+
+                # live-four + bất kỳ threat nào khác: thắng
+                if live_four >= 1 and (live_three + dead_four) >= 1:
+                    total_score += 100_000
+
+        return total_score
+
+    # Kiểm tra bàn cờ đã đầy chưa
     def is_full(self, board):
         return all(board[r][c] != " " for r in range(len(board)) for c in range(len(board)))

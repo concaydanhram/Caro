@@ -3,6 +3,8 @@ import time
 import os
 import json
 import ctypes
+import threading
+import copy
 
 from player import Player
 from bot import Bot
@@ -16,13 +18,9 @@ class GameUI:
         except:
             pass
             
-        self.WIDTH, self.HEIGHT = 600, 750
+        self.WIDTH, self.HEIGHT = 600, 780
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Simple Tic Tac Toe with Minimax AI")
-        try:
-            pygame.display.set_icon(pygame.image.load('assets/icon.png'))
-        except:
-            pass
         self.clock = pygame.time.Clock()
 
         self.state = "menu"
@@ -61,7 +59,8 @@ class GameUI:
         self.score_file = "scores.json"
         self.scores = []
         self.load_scores()
-        
+        self.bot_thread = None
+        self.bot_move_result = None
         self.last_move = None 
         self.btn_rects = {}
         self.view_mode = 3
@@ -69,7 +68,7 @@ class GameUI:
         self.current_win_len = 3
         self.difficulty = 1
         
-        # [NEW] Mặc định bật cắt tỉa Alpha-Beta
+        # Mặc định bật cắt tỉa Alpha-Beta
         self.use_pruning = True
 
     def load_scores(self):
@@ -149,30 +148,29 @@ class GameUI:
             self.screen.blit(text_surf, text_rect)
             self.btn_rects[f"diff_{level}"] = rect_obj
 
-        # [NEW] Nút bật tắt Pruning
-        pruning_y = 200
+        # Bật tắt cắt tỉa Alpha-Beta
+        pruning_y = 210
         pruning_text = "Alpha-Beta: ON" if self.use_pruning else "Alpha-Beta: OFF"
         pruning_color = self.COLORS['win'] if self.use_pruning else self.COLORS['lose']
         
         self.draw_button(pruning_text, ((self.WIDTH - 250)//2, pruning_y, 250, 45), 
                          pruning_color, pruning_color, "toggle_pruning")
 
-        # --- Dời các nút Mode xuống dưới một chút ---
-        self.draw_text_centered("SELECT MODE", self.FONT_MED, self.COLORS['text'], 270)
+        self.draw_text_centered("SELECT MODE", self.FONT_MED, self.COLORS['text'], 300)
 
         btn_width, btn_height = 420, 65
         center_x = (self.WIDTH - btn_width) // 2
         
-        self.draw_button("Classic (3x3 - Win 3)", (center_x, 310, btn_width, btn_height), 
+        self.draw_button("Classic (3x3 - Win 3)", (center_x, 340, btn_width, btn_height), 
                          self.COLORS['btn_default'], self.COLORS['btn_hover'], "mode_3x3")
         
-        self.draw_button("Big Board (8x8 - Win 5)", (center_x, 390, btn_width, btn_height), 
+        self.draw_button("Big Board (8x8 - Win 5)", (center_x, 420, btn_width, btn_height), 
                          self.COLORS['btn_default'], self.COLORS['btn_hover'], "mode_8x8")
 
-        self.draw_button("Leaderboard", (center_x, 470, btn_width, btn_height), 
+        self.draw_button("Leaderboard", (center_x, 500, btn_width, btn_height), 
                          (149, 165, 166), (127, 140, 141), "view_leaderboard") 
 
-        self.draw_button("Quit", (center_x, 550, btn_width, btn_height), 
+        self.draw_button("Quit", (center_x, 580, btn_width, btn_height), 
                          (231, 76, 60), (192, 57, 43), "quit")
 
     def draw_leaderboard(self):
@@ -299,15 +297,20 @@ class GameUI:
 
         self.draw_text_centered(status_text, self.FONT_MED, color, panel_y + 30)
 
-        # Hien thi thong so Bot
+        # Hiển thị thống kê Bot nếu có
         bot_player = None
         for p in self.game.players:
             if isinstance(p, Bot):
                 bot_player = p
                 break
-        
-        if bot_player and (bot_player.last_think_time > 0 or bot_player.nodes_visited > 0):
-            stats_text = f"Bot thought: {bot_player.last_think_time}s | Nodes: {bot_player.nodes_visited}"
+
+        # Khi bot đang suy nghĩ, hiển thị số node đã duyệt
+        if self.state == "playing" and bot_player and self.bot_thread and self.bot_thread.is_alive():
+            stats_text = f"Nodes visited: {bot_player.nodes_visited}"
+            self.draw_text_centered(stats_text, self.FONT_SMALL, (127, 140, 141), panel_y + 65)
+        # Khi bot xong, hiển thị thời gian suy nghĩ lần trước và số node đã duyệt
+        else:
+            stats_text = f"Last think time: {bot_player.last_think_time}s, Nodes visited: {bot_player.nodes_visited}"
             self.draw_text_centered(stats_text, self.FONT_SMALL, (127, 140, 141), panel_y + 65)
 
         btn_y = panel_y + 100
@@ -354,8 +357,7 @@ class GameUI:
         print(f"Game started: Size {size}x{size}, Diff: {self.difficulty}, Depth: {actual_depth}, Pruning: {self.use_pruning}")
 
         self.game.players = [
-            Player("Player", "O"), 
-            # [NEW] Truyen bien use_pruning vao Bot
+            Player("Player", "O"),
             Bot("Bot", "X", max_depth=actual_depth, use_pruning=self.use_pruning) 
         ]
         self.game.turn = 0
@@ -373,7 +375,6 @@ class GameUI:
                 elif action == "diff_1": self.difficulty = 1
                 elif action == "diff_2": self.difficulty = 2
                 elif action == "diff_3": self.difficulty = 3
-                # [NEW] Xu ly nut bam toggle pruning
                 elif action == "toggle_pruning": self.use_pruning = not self.use_pruning
                 elif action == "mode_3x3": self.start_game(3, 3)
                 elif action == "mode_8x8": self.start_game(8, 5)
@@ -446,31 +447,69 @@ class GameUI:
         self.scores.append(entry)
         self.save_scores()
 
+    # --- HÀM HỖ TRỢ ĐA LUỒNG ---
+    def run_bot_calculation(self, bot_player):
+        # Tạo bản sao của game để bot tính toán (tránh xung đột dữ liệu)
+        game_clone = copy.deepcopy(self.game)
+        # Hàm move của bot có thể mất thời gian, ta cho chạy trong luồng riêng
+        row, col = bot_player.move(game_clone.board, game_clone)
+        # Lưu kết quả để luồng chính lấy ra dùng
+        self.bot_move_result = (row, col)
+
+    # --- VÒNG LẶP CHÍNH CỦA GAME ---
     def run(self):
         running = True
         while running:
+            # 1. Xử lý sự kiện, ngay cả khi bot đang suy nghĩ
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handle_click(event.pos)
+                    # Chỉ cho phép click khi không phải lượt Bot
+                    if self.state == "playing":
+                        current_p = self.game.players[self.game.turn % 2]
+                        if not isinstance(current_p, Bot):
+                            self.handle_click(event.pos)
+                    else:
+                        self.handle_click(event.pos)
 
+            # 2. Vẽ giao diện
             if self.state == "menu":
                 self.draw_menu()
             elif self.state == "leaderboard":
                 self.draw_leaderboard()
+            
             elif self.state == "playing" or self.state == "game_over":
                 self.draw_game_board()
                 
                 if self.state == "playing":
                     current_p = self.game.players[self.game.turn % 2]
+
+                    # LOGIC ĐA LUỒNG CHO BOT
                     if isinstance(current_p, Bot):
-                        pygame.display.flip() 
-                        row, col = current_p.move(self.game.board, self.game)
+                        # TH1: Chưa bắt đầu tính toán -> Tạo luồng mới
+                        if self.bot_thread is None:
+                            # Reset kết quả cũ
+                            self.bot_move_result = None 
+                            # Tạo luồng mới với hàm run_bot_calculation
+                            self.bot_thread = threading.Thread(target=self.run_bot_calculation, args=(current_p,))
+                            # Bắt đầu chạy
+                            self.bot_thread.start()
                         
-                        if row is not None and col is not None:
-                            self.make_move(row, col, current_p)
-                        pygame.event.clear()
+                        # TH2: Luồng đang chạy -> Không làm gì cả, game chính vẫn tiếp tục vẽ
+                        elif self.bot_thread.is_alive():
+                            pass 
+                        
+                        # TH3: Luồng đã chạy xong -> Lấy kết quả và đánh
+                        else:
+                            if self.bot_move_result:
+                                row, col = self.bot_move_result
+                                if row is not None and col is not None:
+                                    self.make_move(row, col, current_p)
+                            
+                            # Dọn dẹp để chuẩn bị cho lượt sau
+                            self.bot_thread = None
+                            self.bot_move_result = None
 
             pygame.display.flip()
             self.clock.tick(60)
