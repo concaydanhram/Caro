@@ -1,10 +1,10 @@
 import random
 import time
+from player import Player
 
-class Bot:
+class Bot(Player):
     def __init__(self, name="Máy", symbol="X", max_depth=3, use_pruning=True):
-        self.name = name
-        self.symbol = symbol    
+        super().__init__(name, symbol) 
         self.max_depth = max_depth         # Độ sâu tối đa cây tìm kiếm Minimax
         self.use_pruning = use_pruning     # Bật/tắt cắt tỉa Alpha-Beta
         
@@ -12,6 +12,7 @@ class Bot:
         self.nodes_visited = 0
         self.last_think_time = 0
 
+    #override
     def move(self, board, game):
         start_time = time.time()
         self.nodes_visited = 0
@@ -21,7 +22,7 @@ class Bot:
         # Nếu bàn cờ trống (lượt đầu tiên), đánh vào chính giữa
         if not possible_moves:
             center = len(board) // 2
-            self.last_think_time = round(time.time() - start_time, 4)
+            self.last_think_time = round(time.time() - start_time, 2)
             return center, center
         
         # Nếu chỉ có 1 nước đi, chọn luôn nước đó 
@@ -52,7 +53,7 @@ class Bot:
                 best_move = (r, c)
 
         end_time = time.time()
-        self.last_think_time = round(end_time - start_time, 4)
+        self.last_think_time = round(end_time - start_time, 2)
         return best_move
 
     def minimax(self, board, depth, is_maximizing, alpha, beta, game):

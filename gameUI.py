@@ -18,7 +18,7 @@ class GameUI:
         except:
             pass
             
-        self.WIDTH, self.HEIGHT = 600, 780
+        self.WIDTH, self.HEIGHT = 500, 650
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Simple Tic Tac Toe with Minimax AI")
         self.clock = pygame.time.Clock()
@@ -409,7 +409,7 @@ class GameUI:
             self.game.board[row][col] = player.symbol
             self.last_move = (row, col)
             
-            if self.game.check_win(row, col, player.symbol):
+            if self.game.check_win(row, col, player.symbol, board=None, update_ui=True):
                 self.winner = player
                 self.state = "game_over"
                 self.end_time = time.time()

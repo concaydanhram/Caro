@@ -70,6 +70,27 @@
         "score": 1499
     },
     {
+        "date": "2026-01-12 21:23:48",
+        "board_size": 8,
+        "difficulty": "Hard",
+        "duration": 33.66,
+        "score": 3467
+    },
+    {
+        "date": "2026-01-12 21:22:43",
+        "board_size": 8,
+        "difficulty": "Hard",
+        "duration": 49.59,
+        "score": 3451
+    },
+    {
+        "date": "2026-01-06 16:54:12",
+        "board_size": 8,
+        "difficulty": "Hard",
+        "duration": 118.91,
+        "score": 3382
+    },
+    {
         "date": "2025-12-22 15:50:55",
         "board_size": 8,
         "difficulty": "Easy",
@@ -96,5 +117,12 @@
         "difficulty": "Easy",
         "duration": 4.01,
         "score": 1496
+    },
+    {
+        "date": "2026-01-12 21:25:29",
+        "board_size": 8,
+        "difficulty": "Easy",
+        "duration": 7.06,
+        "score": 1493
     }
 ]
