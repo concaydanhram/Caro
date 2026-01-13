@@ -222,7 +222,9 @@ class Bot(Player):
                         else:
                             blocked_end += 1
                             break
-
+                    # Check đầu chặn phía sau (do hết bàn cờ)
+                    if not (0 <= current_r < n and 0 <= current_c < n):
+                        blocked_end += 1
                     # --- 3. CHẤM ĐIỂM CÁC CHUỖI ---
                     # 5 quân: Chính thức chiến thắng
                     if count >= 5:
