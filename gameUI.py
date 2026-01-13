@@ -348,10 +348,10 @@ class GameUI:
         if size == 8:  
             if self.difficulty == 1: actual_depth = 1
             elif self.difficulty == 2: actual_depth = 2
-            else: actual_depth = 3 
+            else: actual_depth = 4
         else:
             if self.difficulty == 1: actual_depth = 1
-            elif self.difficulty == 2: actual_depth = 2
+            elif self.difficulty == 2: actual_depth = 3
             else: actual_depth = 9 
             
         print(f"Game started: Size {size}x{size}, Diff: {self.difficulty}, Depth: {actual_depth}, Pruning: {self.use_pruning}")

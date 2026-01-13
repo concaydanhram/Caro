@@ -56,12 +56,3 @@ class GameLogic:
     # Kiểm tra hòa, tức là bàn cờ đã đầy chưa
     def is_draw(self):
         return all(self.board[r][c] != " " for r in range(self.size) for c in range(self.size))
-
-    # Kiểm tra thắng thua trên một bàn cờ cụ thể (dùng cho bot tính toán)
-    def check_win_board(self, board, symbol):
-        for r in range(self.size):
-            for c in range(self.size):
-                if board[r][c] == symbol:
-                    if self.check_win(r, c, symbol, board=board, update_ui=False):
-                        return True
-        return False

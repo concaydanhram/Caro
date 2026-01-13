@@ -12,7 +12,6 @@ class Bot(Player):
         self.nodes_visited = 0
         self.last_think_time = 0
 
-    #override
     def move(self, board, game):
         start_time = time.time()
         self.nodes_visited = 0
@@ -29,11 +28,11 @@ class Bot(Player):
         if len(possible_moves) == 1:
             return list(possible_moves)[0]
         
-        # Nếu có nước đi nào giúp thắng ngay lập tức, đánh luôn không cần nghĩ
+        # Kiểm tra thắng tại các nước đi khả dĩ, nếu có nước thắng thì chọn luôn
         for r, c in possible_moves:
             board[r][c] = self.symbol
-            if game.check_win_board(board, self.symbol):
-                board[r][c] = " " # Trả lại trạng thái cũ trước khi return
+            if game.check_win(r, c, self.symbol, board=board, update_ui=False):
+                board[r][c] = " " # Trả lại trạng thái cũ
                 return r, c
             board[r][c] = " " # Trả lại trạng thái cũ
         
@@ -45,7 +44,7 @@ class Bot(Player):
         for r, c in possible_moves:
             board[r][c] = self.symbol
             # Gọi minimax
-            score = self.minimax(board, 1, False, float('-inf'), float('inf'), game)
+            score = self.minimax(board, 1, False, float('-inf'), float('inf'), game, last_move=(r, c))
             board[r][c] = " "
 
             if score > best_score:
@@ -56,18 +55,27 @@ class Bot(Player):
         self.last_think_time = round(end_time - start_time, 2)
         return best_move
 
-    def minimax(self, board, depth, is_maximizing, alpha, beta, game):
+    def minimax(self, board, depth, is_maximizing, alpha, beta, game, last_move=None):
         # Đếm số node đã duyệt
         self.nodes_visited += 1 
 
         opponent = "O" if self.symbol == "X" else "X"
         WIN_SCORE = 1000000000
 
-        if game.check_win_board(board, self.symbol):
-            return WIN_SCORE - depth
-        elif game.check_win_board(board, opponent):
-            return -WIN_SCORE + depth
+        # Chỉ kiểm tra thắng thua tại đúng nước vừa đi (last_move)
+        if last_move:
+            r, c = last_move
+            # Xác định ai là người vừa đánh nước này
+            # Nếu đang lượt Bot (is_maximizing=True), nghĩa là nước trước đó là của Đối thủ
+            player_just_moved = opponent if is_maximizing else self.symbol
+            
+            if game.check_win(r, c, player_just_moved, board=board, update_ui=False):
+                if player_just_moved == self.symbol:
+                    return WIN_SCORE - depth
+                elif player_just_moved == opponent:
+                    return -WIN_SCORE + depth
         
+        # Kiểm tra điều kiện dừng
         if depth >= self.max_depth or self.is_full(board):
             # Trả về điểm ngẫu nhiên nếu ở độ sâu 1 (chế độ dễ nhất)
             if depth == 1:
