@@ -45,7 +45,7 @@ class Bot(Player):
         for r, c in possible_moves:
             board[r][c] = self.symbol
             # Gọi minimax
-            score = self.minimax(board, 0, False, float('-inf'), float('inf'), game)
+            score = self.minimax(board, 1, False, float('-inf'), float('inf'), game)
             board[r][c] = " "
 
             if score > best_score:
@@ -69,8 +69,8 @@ class Bot(Player):
             return -WIN_SCORE + depth
         
         if depth >= self.max_depth or self.is_full(board):
-            # Trả về điểm ngẫu nhiên nếu ở độ sâu 0 (chế độ dễ nhất)
-            if depth == 0:
+            # Trả về điểm ngẫu nhiên nếu ở độ sâu 1 (chế độ dễ nhất)
+            if depth == 1:
                 return random.randint(-10, 10)  
             return self.evaluate(board, game)
 
@@ -132,17 +132,23 @@ class Bot(Player):
         if not found_any_piece:
             return []
             
-        return list(possible_moves)
+        moves_list = list(possible_moves)
+
+        # Sắp xếp ưu tiên các ô gần trung tâm (Heuristic đơn giản)
+        center = size // 2
+        moves_list.sort(key=lambda m: abs(m[0]-center) + abs(m[1]-center))
+            
+        return moves_list
 
     # Chấm điểm ước tính cho nước đi
     def evaluate(self, board, game):
-        my_score = self.count_sequences(board, self.symbol)
-        opp_score = self.count_sequences(board, "O" if self.symbol == "X" else "X")
+        my_score = self.count_sequences(board, self.symbol, is_opp=False)
+        opp_score = self.count_sequences(board, "O" if self.symbol == "X" else "X", is_opp=True)
         # Nhân 1.2 vào đối thủ để ép Bot ưu tiên chặn hơn là tấn công.
         return my_score - (opp_score * 1.2)
 
     # Hàm ước tính số điểm dựa trên các chuỗi quân cờ
-    def count_sequences(self, board, symbol):
+    def count_sequences(self, board, symbol, is_opp=False):
         n = len(board)
         total_score = 0
         directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
@@ -176,18 +182,35 @@ class Bot(Player):
                     while 0 <= current_r < n and 0 <= current_c < n:
                         cell = board[current_r][current_c]
 
+                        # Gặp quân của mình, tăng đếm
                         if cell == symbol:
                             count += 1
                             current_r += dr
                             current_c += dc
 
+                        # Gặp ô trống
                         elif cell == " ":
-                            if gaps == 0:
-                                gaps = 1
-                                current_r += dr
-                                current_c += dc
+                            # Kiểm tra ô tiếp theo sau ô trống
+                            next_r, next_c = current_r + dr, current_c + dc
+
+                            # Nếu ô tiếp theo là tường, hoặc quân đối phương, dừng quét và đánh dấu bị chặn
+                            if not (0 <= next_r < n and 0 <= next_c < n) or (board[next_r][next_c] != " " and board[next_r][next_c] != symbol):
+                                blocked_end += 1
+                                break
+                            
+                            # Nếu sau ô trống là quân mình mà chưa có gap, tăng gaps và tiếp tục quét
+                            if 0 <= next_r < n and 0 <= next_c < n and board[next_r][next_c] == symbol:
+                                if gaps < 1:
+                                    gaps += 1
+                                    current_r, current_c = next_r, next_c
+                                else:
+                                    break
+                            
+                            # Nếu sau ô trống là ô trống hoặc quân đối phương, dừng quét
                             else:
                                 break
+
+                        # Gặp quân đối phương hoặc ngoài biên, dừng quét và đánh dấu bị chặn
                         else:
                             blocked_end += 1
                             break
@@ -201,16 +224,21 @@ class Bot(Player):
                     # Bị chặn 2 đầu: không có giá trị
                     if blocked_end == 2:
                         continue
-
+                    
+                    # CẢI TIẾN: LIVE THREE ĐIỂM CAO HƠN DEAD FOUR ĐỐI VỚI TẤN CÔNG (BOT)
+                    # DEAD FOUR ĐIỂM CAO HƠN LIVE THREE ĐỐI VỚI PHÒNG THỦ (ĐỐI THỦ)
                     # 4 quân: Cực kỳ nguy hiểm
                     if count == 4:
                         # Live-four: không bị chặn 2 đầu
                         if blocked_end == 0:
-                            total_score += 1_000_000
+                            total_score += 10_000_000
                             live_four += 1
                         # Dead-four: bị chặn 1 đầu
                         else:
-                            total_score += 200_000
+                            if is_opp:
+                                total_score += 15_000_000   # ĐỐI THỦ BẮT BUỘC PHẢI CHẶN
+                            else:
+                                total_score += 300_000      # Dead four dễ bị đối thủ chặn, nên ít điểm hơn
                             dead_four += 1
                         continue
 
@@ -220,21 +248,22 @@ class Bot(Player):
                         if blocked_end == 0:
                             # Live-three gãy (có 1 ô trống ở giữa)
                             if gaps == 1:
-                                total_score += 12_000
+                                total_score += 400_000
                             # Live-three không gãy
                             else:
-                                total_score += 8_000
+                                total_score += 450_000
                             live_three += 1
                         # Dead-three: bị chặn 1 đầu
                         else:
-                            total_score += 500
+                            total_score += 1_000
                         continue
 
                     # 2 quân: Khởi đầu, nguy hiểm chưa cao
                     if count == 2:
                         # Live-two: không bị chặn 2 đầu
                         if blocked_end == 0:
-                            total_score += 80
+                            if gaps == 1: total_score += 800
+                            else: total_score += 500
                         # Dead-two: bị chặn 1 đầu
                         else:
                             total_score += 10

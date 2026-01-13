@@ -18,7 +18,7 @@ class GameUI:
         except:
             pass
             
-        self.WIDTH, self.HEIGHT = 500, 650
+        self.WIDTH, self.HEIGHT = 550, 750
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Simple Tic Tac Toe with Minimax AI")
         self.clock = pygame.time.Clock()
@@ -346,12 +346,12 @@ class GameUI:
         
         actual_depth = 3  
         if size == 8:  
-            if self.difficulty == 1: actual_depth = 0
-            elif self.difficulty == 2: actual_depth = 1
+            if self.difficulty == 1: actual_depth = 1
+            elif self.difficulty == 2: actual_depth = 2
             else: actual_depth = 3 
         else:
-            if self.difficulty == 1: actual_depth = 0
-            elif self.difficulty == 2: actual_depth = 3
+            if self.difficulty == 1: actual_depth = 1
+            elif self.difficulty == 2: actual_depth = 2
             else: actual_depth = 9 
             
         print(f"Game started: Size {size}x{size}, Diff: {self.difficulty}, Depth: {actual_depth}, Pruning: {self.use_pruning}")
